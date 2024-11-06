@@ -1,3 +1,4 @@
+install.packages("dplyr")
 require(dplyr)
 library(readr)
 library(stringr)
@@ -19,163 +20,360 @@ B <- matrix(c(0, 26, 3, 8, 30,
               27, 24, 12, 17, 29,
               31, 36, 40, 35, 8,
               24, 43, 31, 21, 39), nrow = 5, byrow = TRUE)
-BT = t(B)
-c <- solve(A %*% BT)
-c
 
-p <- B %*% (BT %*% B) %*% BT
-p
+# Calcule os autovetores para cada matriz
+eigen_A <- eigen(A)$vectors
+eigen_B <- eigen(B)$vectors
 
-#a)
-eigen_result = eigen(p)
-autovetores <- eigen_result$vectors
-soma_autovetores <- colSums(autovetores)
-soma_total_autovetores <- sum(soma_autovetores)
-soma_total_autovetores
-#ENT É FALSO ,POIS O RESULTADO APRESENTADO FOI -2.80603
+# Some os autovetores
+soma_autovetores <- eigen_A + eigen_B
+
+# Calculando P
+P <- B %*% (t(B) %*% B) %*% t(B)
+
+# Calculando os autovetores de P
+eigen_P <- eigen(P)$vectors
+
+# Calculando a soma dos autovetores de P
+soma_autovetores_P <- colSums(eigen_P)
+
+# Exibindo a soma dos autovetores de P
+print(soma_autovetores_P)
+
+# Arredondando para 4 casas decimais para facilitar a comparação
+soma_autovetores_P_arredondada <- round(sum(soma_autovetores_P), 4)
+
+soma_autovetores_P_arredondada
 
 #b)
-sum(abs(diag(c)))
-#SIM O RESULTADO é 0.0722
+# Calculando C
+C <- solve(A %*% t(B))
+
+# Calculando a soma dos valores absolutos da diagonal de C
+soma_diagonal_C <- sum(abs(diag(C)))
+
+# Exibindo a soma
+soma_diagonal_C
 
 #c)
 sum(A[lower.tri(A)])
 #não a soma é 384
 
 #d)
-det_a = det(A)
-det_b = det(B)
-det_ab = det(A %*% B)
-loga = log10(abs(det_a))
-logb = log10(abs(det_b))
-logab = log10(abs(det_ab))
-loga
-logb
-logab
-#SIM, Os resultados estão corretos
+# Calculando o log10 do valor absoluto do determinante de A
+log_det_A <- log10(abs(det(A)))
+
+# Exibindo o resultado
+print(log_det_A)
+
+# Calculando o log10 do valor absoluto do determinante de B
+log_det_B <- log10(abs(det(B)))
+
+# Exibindo o resultado
+print(log_det_B)
+
+# Calculando o determinante da matriz resultante do produto matricial entre A e B
+det_AB <- det(A %*% B)
+
+# Calculando o log10 do valor absoluto do determinante de AB
+log_det_AB <- log10(abs(det_AB))
+
+# Exibindo o resultado
+print(log_det_AB)
 
 #e)
-inversoab = solve(A %*% t(B))
-diagab = diag(inversoab)
-max(diagab)
-#Não o maior valor é 0.01596
+# Calculando o produto matricial entre A e o transposto de B
+ABt <- A %*% t(B)
+
+# Calculando o inverso da matriz resultante
+inv_ABt <- solve(ABt)
+
+# Obtendo a diagonal da matriz inversa
+diagonal_inv_ABt <- diag(inv_ABt)
+
+# Encontrando o maior elemento da diagonal
+maior_elemento_diagonal <- max(diagonal_inv_ABt)
+
+# Exibindo o resultado
+maior_elemento_diagonal
+
 
 
 #2)
-dt <- readr::read_csv("Dados/chocolate.csv.gz")
-view(dt)
+require(data.table)
+require(dplyr)
+require(tidyr)
+chocolate = fread("./avaliação_01-datasets/chocolate.csv.gz")
+glimpse(chocolate)
 
-#a) 
-num_paises <-dt %>%
-  distinct(origem_cacau) %>%
-  count()
-num_paises
+#a)
+num_paises <- chocolate %>%
+  select(origem_cacau) %>%
+  distinct() %>%
+  nrow()
+
+# Exibir o número de países
+print(num_paises)
 
 #b)
-chocolates_filtrados <- dt %>%
-  filter(str_extract(ingredientes, "^\\d+") %>% as.numeric() == 4 & 
-           str_count(caracteristicas, ",") == 1)
-num_chocolates <- nrow(chocolates_filtrados)
-num_chocolates
-#sim existem 104 
+chocolate$qtdade_caracteristicas <- lengths(strsplit(chocolate$caracteristicas, ","))
+
+q2 <- chocolate %>%
+  filter(substr(ingredientes, 1, 1) == "4",
+         qtdade_caracteristicas == "2")
+
+# Contar o número de chocolates resultantes
+num_chocolates <- nrow(q2)
+
+# Exibir o número de chocolates
+print(num_chocolates)
 
 #c)
-frequencia_5_ingredientes <- dt %>%
-  filter(str_extract(ingredientes, "^\\d+") %>% as.numeric() == 5)
-frequencia_absoluta <- nrow(frequencia_5_ingredientes)
-frequencia_absoluta
+# Filtrar chocolates que contenham 5 ingredientes
+chocolates_5_ingredientes <- chocolate %>%
+  filter(substr(ingredientes, 1, 1) == "5")
+
+# Calcular a frequência absoluta
+frequencia_absoluta <- nrow(chocolates_5_ingredientes)
+
+# Exibir a frequência absoluta
+print(frequencia_absoluta)
 
 #d)
-caracteristicas = dt %>% 
-  pull(caracteristicas)
-caracteristicas
+# Criar um novo dataframe com as características separadas em linhas
+caracteristicas_chocolate <- chocolate %>%
+  separate_rows(caracteristicas, sep = ",") %>%
+  group_by(caracteristicas) %>%
+  summarise(frequencia = n()) %>%
+  arrange(desc(frequencia))
 
-#e)existem 81 chocolates que incluem o ingrediente Adoçante em sua composição
+caracteristicas_chocolate
 
-cont_adocante = dt %>%
-  filter(grepl("S*", ingredientes)) %>%
-  pull(ingredientes) %>%
-  length()
-cont_adocante
+# Selecionar apenas as características desejadas
+palavras_chave <- c("sweet", "nutty", "cocoa", "roasty", "creamy", "earthy", "sandy", "fatty")
 
-##3)
-artmoma = readr::read_csv("Dados/Art_Moma.csv.gz")
-art = readr::read_csv("Dados/Art.csv.gz")
-view(art)
-view(artmoma)
-#a)Os 3 artista(s) com mais exposições no The Whitney classificados em ordem decrescente de exposições são: Edward Hopper, Georgia O’Keeffe e Stuart Davis.
-# Agrupar os dados pelo nome do artista e somar o número de exposições no Whitney
-top_artists_whitney <- art %>%
+# Criar uma expressão regular para corresponder a variações nas palavras-chave
+padrao_regex <- paste0("\\b", paste(palavras_chave, collapse = "|"), "\\b", ignore.case = TRUE)
+
+# Filtrar as características desejadas e somar as frequências
+q2b <- caracteristicas_chocolate %>%
+  filter(grepl(padrao_regex, caracteristicas))  %>%
+  group_by(caracteristicas)
+
+# Exibir a soma das frequências
+print(q2b)
+
+sum(q2b$frequencia)
+
+#e)
+# Criar um novo dataframe com as características separadas em linhas
+ingredientes_chocolate <- chocolate %>%
+  separate_rows(ingredientes, sep = ",") %>%
+  separate_rows(ingredientes, sep = "-") %>%
+  group_by(ingredientes) %>%
+  summarise(frequencia = n()) %>%
+  arrange(desc(frequencia))
+
+sum(ingredientes_chocolate$frequencia[ingredientes_chocolate$ingredientes == "S*"])
+
+#3) a)
+
+require(data.table)
+require(dplyr)
+require(tidyr)
+
+art_moma = fread("./avaliação_01-datasets/Art_Moma.csv.gz")
+art = fread("./avaliação_01-datasets/Art.csv.gz")
+glimpse(art_moma)
+glimpse(art)
+q3a <- inner_join(art, art_moma,
+                  by = "artist_unique_id") %>%
   group_by(artist_name) %>%
-  summarize(total_whitney_exhibitions = max(artmoma$whitney_count_to_year, na.rm = TRUE)) %>%
-  arrange(desc(total_whitney_exhibitions)) %>%
-  head(3)
-top_artists_whitney
-#b)Do total de artistas, 152 são Swiss, Mexican ou Japanese
-nacionalidades = c("Swiss", "Mexican", "Japanese")
-art %>% 
-  filter(artist_nationality %in% nacionalidades) %>%
-  nrow()
-#não o total é 26.
+  summarise(sum_whitney_count_to_year = sum(whitney_count_to_year)) %>%
+  arrange(desc(sum_whitney_count_to_year))
 
-#C)apenas 6 artista(s) com a nacionalidade Swiss tiveram entre 0 e 1 exposições no The Whitney.
-###
-art2 = inner_join(art, artmoma,by= "artist_unique_id")
+q3a
 
-#filtrando artista coma nacionalidade Swiss:
+#b)
+q3b <- inner_join(art, art_moma,
+                  by = "artist_unique_id") %>%
+  group_by(artist_nationality) %>%
+  summarise(frequencia = n()) 
 
-artist_swiss = art2 %>%  
-  group_by(artist_nationality)%>%
-  filter(artist_nationality %in% "Swiss") 
-view(artist_swiss)
-#Observando quantos tiveram entre 0 e 1 exposições:
+q3b
 
-swiss_01 = artist_swiss %>%
-  filter(whitney_count_to_year == 1)
-view(swiss_01)
-
-#não, apenas 5 artistas tiveram entre 0 e 1 exposições no the Whitney 
-
-#d)A diferença entre a média de páginas para artistas Brancos e Não Brancos no ano de 2007 é -0,24.
-
-#filtrando artista brancos e calculando a media
-
-mean_artist_white = art2 %>%
-  filter(artist_race_nwi == "White", year == 2007) %>%
-  summarise(media_page = mean(space_ratio_per_page_total))
-mean_artist_white
-
-#filtrando artistas não brancos
-mean_artist_non_white = art2 %>%
-  filter(artist_race_nwi == "Non-White", year== 2007) %>%
-  summarise(media_page = mean(space_ratio_per_page_total))
-mean_artist_non_white
-
-diferenca = mean_artist_white - mean_artist_non_white
-diferenca
-
-#Sim, a diferença é de 0,24 
-
-#e)Dos artista(s) que expuseram no The Whitney, apenas 164 aparecem nos livros ‘Gardner’ e ‘Janson’
-
-#filtrando apenas artistas que expuseram no the whitney
+palavras_chave <- c("Swiss", "Mexican", "Japanese")
 
 
-artist_whitney = art2 %>%
-  filter(whitney_count_to_year != 0)%>%
-  select(artist_unique_id)
+# Filtrar as características desejadas e somar as frequências
+q3b <- q3b %>%
+  filter(artist_nationality %in% palavras_chave)
 
-#Filtrando os que aparecem nos livros 
-artist_books = art2 %>%
-  filter(book %in% c("Gardner", "Janson")) %>% 
-  select(artist_unique_id)
-artists_common <- semi_join(artist_whitney, artist_books, by = "artist_unique_id")
-num_artists_common <- nrow(artists_common)
-num_artists_common
-view(artists_common)
-#não 
+# Exibir a soma das frequências
+print(q3b)
+
+sum(q3b$frequencia)
+
+#c)
+
+q3c <- inner_join(art, art_moma,
+                  by = "artist_unique_id") %>%
+  group_by(artist_name, artist_nationality) %>%
+  summarise(sum_whitney_count_to_year = sum(whitney_count_to_year))
+
+q3c
 
 
+palavras_chave <- c("Swiss")
 
 
+# Filtrar as características desejadas e somar as frequências
+q3c <- q3c %>%
+  filter(artist_nationality %in% palavras_chave &
+           sum_whitney_count_to_year <= 1)
 
+# Exibir a soma das frequências
+print(q3c)
+
+nrow(q3c)
+
+#d)
+
+q3d <- inner_join(art, art_moma,
+                  by = "artist_unique_id") 
+
+# Filtrar por artist_race == "white" e calcular a média
+media_white <- q3d %>%
+  filter(artist_race_nwi == "White") %>%
+  summarise(media_space_ratio = mean(space_ratio_per_page_total))
+
+# Filtrar por artist_race diferente de "white" e calcular a média
+media_nao_white <- q3d %>%
+  filter(artist_race_nwi != "White") %>%
+  summarise(media_space_ratio = mean(space_ratio_per_page_total))
+
+# Calcular a diferença
+diferenca <- media_white$media_space_ratio - media_nao_white$media_space_ratio
+
+# Exibir o resultado
+print(diferenca)
+
+#e)
+
+q3e <- inner_join(art, art_moma,
+                  by = "artist_unique_id") 
+
+unique(q3e$book)
+
+q3e <- q3e %>%
+  filter(whitney_count_to_year > 0) %>%
+  group_by(artist_name) %>%
+  summarise(frequencia = n())
+
+nrow(q3e)
+
+#4)
+
+require(data.table)
+require(dplyr)
+require(tidyr)
+
+refugiados_pais= fread("./avaliação_01-datasets/refugiados_pais.csv.gz")
+refugiados = fread("./avaliação_01-datasets/refugiados.csv.gz")
+
+
+glimpse(refugiados_pais)
+
+glimpse(refugiados)
+
+# Realizar o left join
+tb4 <- refugiados %>%
+  left_join(refugiados_pais, by = c("id_origem" = "id")) %>%
+  left_join(refugiados_pais, by = c("id_destino" = "id"), suffix = c("_origem", "_destino"))
+
+# Exibir a planilha
+print(tb4)
+
+#a)
+
+# Filtrar para o ano de 2006
+tb4_2006 <- tb4 %>% filter(ano == 2006)
+
+# Criar a matriz de migração [origem, destino]
+matriz_migracao_2006 <- tb4_2006 %>%
+  group_by(regiao_origem, regiao_destino) %>%
+  summarise(total_migrantes = sum(refugiados)) %>%
+  pivot_wider(names_from = regiao_destino, values_from = total_migrantes, values_fill = 0)
+
+# Exibir a matriz de migração no formato desejado
+print(matriz_migracao_2006)
+
+#b)
+
+# Especificar o nome_origem, nome_destino e ano desejados
+ano_desejado <- 1972
+
+q4b <- tb4 %>%
+  group_by(nome_origem, nome_destino, ano) %>%
+  summarise(refugiados = sum(refugiados), .groups = "drop") 
+
+resultado <- q4b %>%
+  filter(ano >= ano_desejado) %>%
+  group_by(nome_origem, nome_destino) %>%
+  summarise(total_refugiados = sum(refugiados))
+
+refugiados_af_can <- resultado %>%
+  filter(nome_origem == "Afghanistan", nome_destino == "Canada")
+print(refugiados_af_can)
+
+refugiados_paq_can <- resultado %>%
+  filter(nome_origem == "Pakistan", nome_destino == "Canada")
+print(refugiados_paq_can)
+
+#C)
+
+ano_c <- 1965
+
+q4c <- tb4 %>%
+  group_by(nome_origem, subregiao_origem, ano) %>%
+  summarise(refugiados = sum(refugiados), .groups = "drop") 
+
+q4c <- q4c %>%
+  filter(ano == ano_c) %>%
+  group_by(nome_origem, subregiao_origem) %>%
+  summarise(total_refugiados = sum(refugiados)) %>%
+  arrange(desc(total_refugiados))
+
+q4c
+
+#D)
+
+ano_d <- 1982
+
+q4d <- tb4 %>%
+  group_by(nome_destino, ano) %>%
+  summarise(refugiados = sum(refugiados), .groups = "drop") %>%
+  na.omit()
+
+q4d <- q4d %>%
+  filter(ano >= ano_d) %>%
+  group_by(nome_destino) %>%
+  summarise(total_refugiados = sum(refugiados)) %>%
+  arrange(desc(total_refugiados))
+
+q4d
+
+#E)
+
+n_refugiados <- 5382652
+
+q4e<- tb4 %>%
+  group_by(nome_destino) %>%
+  summarise(refugiados = sum(refugiados), .groups = "drop") %>%
+  na.omit()
+
+q4e <- q4e %>%
+  filter(refugiados >= n_refugiados) %>%
+  arrange(desc(refugiados))
+
+cat('Existem', nrow(q4e), 'países que receberam pelo menos', n_refugiados, 'refugiados.\n')
